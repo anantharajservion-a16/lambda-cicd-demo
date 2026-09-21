@@ -4,8 +4,28 @@ phases:
   build:
     commands:
       - echo "Build started"
-      - echo "Preparing Lambda deployment package"
+      - echo "Creating Lambda deployment package"
+      - zip lambda.zip lambda_function.py
+      - echo "Updating Lambda function code"
+      - aws lambda update-function-code --function-name codepipeline-demo-lambda --zip-file fileb://lambda.zip
+      - echo "Publishing new Lambda version"
+      - export TARGET_VERSION=$(aws lambda publish-version --function-name codepipeline-demo-lambda --query Version --output text)
+      - echo "New Lambda version is $TARGET_VERSION"
+      - echo "Creating AppSpec file"
+      - |
+        cat > appspec.yml <<EOF
+        version: 0.0
+        Resources:
+          - TargetLambda:
+              Type: AWS::Lambda::Function
+              Properties:
+                Name: codepipeline-demo-lambda
+                Alias: live
+                CurrentVersion: "4"
+                TargetVersion: "$TARGET_VERSION"
+        EOF
+      - cat appspec.yml
 
 artifacts:
   files:
-    - lambda_function.py
+    - appspec.yml
