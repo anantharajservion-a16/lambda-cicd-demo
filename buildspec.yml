@@ -1,0 +1,11 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Build started"
+      - echo "Preparing Lambda deployment package"
+
+artifacts:
+  files:
+    - lambda_function.py
