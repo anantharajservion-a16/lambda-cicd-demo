@@ -4,14 +4,22 @@ phases:
   build:
     commands:
       - echo "Build started"
+
       - echo "Creating Lambda deployment package"
       - zip lambda.zip lambda_function.py
-      - echo "Updating Lambda function code"
+
+      - echo "Updating Lambda $LATEST"
       - aws lambda update-function-code --function-name codepipeline-demo-lambda --zip-file fileb://lambda.zip
+
+      - echo "Getting current version from live alias"
+      - export CURRENT_VERSION=$(aws lambda get-alias --function-name codepipeline-demo-lambda --name live --query FunctionVersion --output text)
+      - echo "Current version is $CURRENT_VERSION"
+
       - echo "Publishing new Lambda version"
       - export TARGET_VERSION=$(aws lambda publish-version --function-name codepipeline-demo-lambda --query Version --output text)
-      - echo "New Lambda version is $TARGET_VERSION"
-      - echo "Creating AppSpec file"
+      - echo "Target version is $TARGET_VERSION"
+
+      - echo "Creating AppSpec"
       - |
         cat > appspec.yml <<EOF
         version: 0.0
@@ -21,9 +29,11 @@ phases:
               Properties:
                 Name: codepipeline-demo-lambda
                 Alias: live
-                CurrentVersion: "4"
+                CurrentVersion: "$CURRENT_VERSION"
                 TargetVersion: "$TARGET_VERSION"
         EOF
+
+      - echo "Generated AppSpec:"
       - cat appspec.yml
 
 artifacts:
